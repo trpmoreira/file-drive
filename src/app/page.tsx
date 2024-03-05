@@ -5,7 +5,7 @@ import { useOrganization, useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
-import { z } from "zod";
+import { set, z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   name: z
@@ -47,6 +48,7 @@ export default function Home() {
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
 
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,8 +61,6 @@ export default function Home() {
   const fileRef = form.register("file");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-
     if (!orgId) return;
 
     const postUrl = await generateUploadUrl();
@@ -72,12 +72,25 @@ export default function Home() {
     });
 
     const { storageId } = await result.json();
+    try {
+      await createFile({
+        name: values.name,
+        fileId: storageId,
+        orgId,
+      });
 
-    await createFile({
-      name: values.name,
-      fileId: storageId,
-      orgId,
-    });
+      toast({
+        variant: "success",
+        title: "Your file has been uploaded! 🎉",
+        description: "You can now find it in your organization.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Something went wrong",
+        description: "Your file could not be uploaded. Please try again.",
+      });
+    }
 
     form.reset();
     setOpen(false);
@@ -96,7 +109,13 @@ export default function Home() {
       <div className="flex justify-between">
         <h1 className="text-4xl font-bold">Your Files</h1>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(isOpen) => {
+            setOpen(isOpen);
+            form.reset();
+          }}
+        >
           <DialogTrigger asChild>
             <Button variant="outline">Upload File</Button>
           </DialogTrigger>
