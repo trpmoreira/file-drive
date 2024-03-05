@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z
@@ -158,7 +159,12 @@ export default function Home() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit">Submit</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Submit
+                  </Button>
                 </form>
               </Form>
               <div className="grid grid-cols-4 items-center gap-4"></div>
