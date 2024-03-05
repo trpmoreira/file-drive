@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { MutationCtx, QueryCtx, mutation, query } from "./_generated/server";
 import { getUser } from "./users";
 
 export const generateUploadUrl = mutation(async (ctx) => {
@@ -54,5 +54,36 @@ export const getFiles = query({
       .query("files")
       .withIndex("by_orgId", (q) => q.eq("orgId", args.orgId))
       .collect();
+  },
+});
+
+export const deleteFile = mutation({
+  args: {
+    fileId: v.id("files"),
+  },
+  async handler(ctx, args) {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new ConvexError("You must be logged in to create a file.");
+    }
+
+    const file = await ctx.db.get(args.fileId);
+
+    if (!file) {
+      throw new ConvexError("File not found.");
+    }
+
+    const user = await getUser(ctx, identity.tokenIdentifier);
+
+    const hasAcces =
+      user.orgIds.includes(file.orgId) ||
+      user.tokenIdentifier.includes(file.orgId);
+
+    if (!hasAcces) {
+      throw new ConvexError("You do not have access to this file.");
+    }
+
+    await ctx.db.delete(args.fileId);
   },
 });
