@@ -30,6 +30,7 @@ import {
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { Doc } from "../../convex/_generated/dataModel";
 
 const formSchema = z.object({
   name: z
@@ -65,19 +66,30 @@ export function UploadButton() {
     if (!orgId) return;
 
     const postUrl = await generateUploadUrl();
+    const fileType = values.file[0].type;
 
     const result = await fetch(postUrl, {
       method: "POST",
-      headers: { "Content-Type": values.file[0]!.type },
+      headers: { "Content-Type": fileType },
       body: values.file[0],
     });
 
     const { storageId } = await result.json();
+
+    const types = {
+      "image/png": "image",
+      "image/jpeg": "image",
+      "image/gif": "image",
+      "application/pdf": "pdf",
+      "text/csv": "csv",
+    } as Record<string, Doc<"files">["type"]>;
+
     try {
       await createFile({
         name: values.name,
         fileId: storageId,
         orgId,
+        type: types[fileType],
       });
 
       toast({
@@ -114,7 +126,7 @@ export function UploadButton() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline">Upload File</Button>
+        <Button variant="default">Upload File</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
