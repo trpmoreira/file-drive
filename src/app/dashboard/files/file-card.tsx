@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { Doc, Id } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
   FileText,
@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { toast } from "@/components/ui/use-toast";
 import Image from "next/image";
 

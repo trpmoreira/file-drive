@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useOrganization, useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 
 import { set, z } from "zod";
 import { useForm } from "react-hook-form";
@@ -30,7 +30,7 @@ import {
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { Doc } from "../../convex/_generated/dataModel";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 const formSchema = z.object({
   name: z

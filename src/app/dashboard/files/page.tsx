@@ -1,16 +1,16 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { UploadButton } from "./upload-button";
-import { api } from "../../convex/_generated/api";
 import { useOrganization, useUser } from "@clerk/nextjs";
-import FileCard from "./file-card";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
-import SearchBar from "./search-bar";
 import { useState } from "react";
+import { api } from "../../../../convex/_generated/api";
+import { UploadButton } from "@/app/dashboard/files/upload-button";
+import SearchBar from "@/app/dashboard/files/search-bar";
+import FileCard from "@/app/dashboard/files/file-card";
 
-export default function Home() {
+export default function FilesPage() {
   const organization = useOrganization();
   const user = useUser();
   const [query, setQuery] = useState("");
@@ -25,7 +25,7 @@ export default function Home() {
   const isLoading = files === undefined;
 
   return (
-    <main className="container mx-auto pt-12">
+    <div>
       {isLoading && (
         <div className="flex flex-col items-center mt-24 w-full">
           <Loader2 className="h-32 w-32 animate-spin text-zinc-500" />
@@ -84,6 +84,6 @@ export default function Home() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
