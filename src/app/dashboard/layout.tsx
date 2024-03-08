@@ -4,6 +4,7 @@ import "../globals.css";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FilesIcon, Star } from "lucide-react";
+import SideNav from "./side-nav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,18 +22,7 @@ export default function DashboardLayout({
   return (
     <main className="container mx-auto pt-12">
       <div className="flex gap-8">
-        <div className="w-40 flex-col gap-4 flex">
-          <Link href="/dashboard/files">
-            <Button variant={"link"}>
-              <FilesIcon /> All Files
-            </Button>
-          </Link>
-          <Link href="/dashboard/favorites">
-            <Button variant={"link"}>
-              <Star /> Favorites
-            </Button>
-          </Link>
-        </div>
+        <SideNav />
         <div className="w-full">{children}</div>
       </div>
     </main>

@@ -33,6 +33,7 @@ import {
   ImageIcon,
   MoreHorizontal,
   MoreVertical,
+  StarIcon,
   Table,
   Trash2,
 } from "lucide-react";
@@ -45,6 +46,7 @@ import Image from "next/image";
 function FileCardActions({ file }: { file: Doc<"files"> }) {
   const [open, setOpen] = useState(false);
   const deleteFile = useMutation(api.files.deleteFile);
+  const toggleFavorite = useMutation(api.files.toggleFavorite);
 
   return (
     <>
@@ -61,8 +63,6 @@ function FileCardActions({ file }: { file: Doc<"files"> }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                //TODO : Implement delete file
-
                 try {
                   await deleteFile({ fileId: file._id });
 
@@ -98,6 +98,16 @@ function FileCardActions({ file }: { file: Doc<"files"> }) {
           >
             <Trash2 className="w-4 h-4" />
             Delete
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="flex gap- items-center cursor-pointer"
+            onClick={() => {
+              toggleFavorite({ fileId: file._id });
+            }}
+          >
+            <StarIcon className="w-4 h-4" />
+            Favorite
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
