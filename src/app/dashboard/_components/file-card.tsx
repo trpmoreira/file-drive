@@ -1,7 +1,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -23,7 +22,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 import { Doc, Id } from "../../../../convex/_generated/dataModel";
@@ -36,17 +34,28 @@ import {
   StarIcon,
   Table,
   Trash2,
+  Undo,
 } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { toast } from "@/components/ui/use-toast";
 import Image from "next/image";
+import { Protect } from "@clerk/nextjs";
 
-function FileCardActions({ file }: { file: Doc<"files"> }) {
+function FileCardActions({
+  file,
+  isFavorite,
+  isMarkedForDeletion,
+}: {
+  file: Doc<"files">;
+  isFavorite: boolean;
+  isMarkedForDeletion: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const deleteFile = useMutation(api.files.deleteFile);
   const toggleFavorite = useMutation(api.files.toggleFavorite);
+  const recover = useMutation(api.files.restoreFile);
 
   return (
     <>
@@ -55,21 +64,24 @@ function FileCardActions({ file }: { file: Doc<"files"> }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              account and remove your data from our servers.
+              This action will mark this file for deletion. After you mark it,
+              if you need it back you will have to contact your organization
+              Admin.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-red-500 hover:bg-red-700"
               onClick={async () => {
                 try {
                   await deleteFile({ fileId: file._id });
 
                   toast({
                     variant: "destructive",
-                    title: "File Deleted",
-                    description: "Your file has been deleted successfully.",
+                    title: "File Marked for deletion",
+                    description:
+                      "Your file has been marked for deletion, and it will be deleted soon, it this was a mistake contact your organizadion Admin.",
                   });
                 } catch (error) {
                   toast({
@@ -93,22 +105,60 @@ function FileCardActions({ file }: { file: Doc<"files"> }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
-            className="flex gap-1 text-red-500 items-center cursor-pointer"
-            onClick={() => setOpen(true)}
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="flex gap- items-center cursor-pointer"
+            className="flex gap-2 items-center cursor-pointer"
             onClick={() => {
               toggleFavorite({ fileId: file._id });
             }}
           >
-            <StarIcon className="w-4 h-4" />
-            Favorite
+            {isFavorite ? (
+              <div className="flex gap-1 items-center">
+                <StarIcon className="w-4 h-4 text-yellow-600" />
+                <span className="text-yellow-600">Unfavorite</span>
+              </div>
+            ) : (
+              <div className="flex gap-1 items-center">
+                <StarIcon className="w-4 h-4" />
+                <span>Favorite</span>
+              </div>
+            )}
           </DropdownMenuItem>
+          <Protect role="org:admin">
+            <DropdownMenuSeparator />
+            {!isMarkedForDeletion ? (
+              <DropdownMenuItem
+                className="flex gap-1 text-red-500 items-center cursor-pointer"
+                onClick={() => setOpen(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                className="flex gap-1 text-green-500 items-center cursor-pointer"
+                onClick={async () => {
+                  try {
+                    await recover({ fileId: file._id });
+
+                    toast({
+                      variant: "success",
+                      title: "File Recovered",
+                      description: "Your file has been recovered.",
+                    });
+                  } catch (error) {
+                    toast({
+                      variant: "default",
+                      title: "Something went wrong",
+                      description:
+                        "Your file could not be deleted. Please try again.",
+                    });
+                  }
+                }}
+              >
+                <Undo className="w-4 h-4" />
+                Recover
+              </DropdownMenuItem>
+            )}
+          </Protect>
         </DropdownMenuContent>
       </DropdownMenu>
     </>
@@ -119,12 +169,24 @@ function getFileUrl(file: Id<"_storage">) {
   return `${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${file}`;
 }
 
-const FileCard = ({ file }: { file: Doc<"files"> }) => {
+const FileCard = ({
+  file,
+  allFavorites,
+}: {
+  file: Doc<"files">;
+  allFavorites: Doc<"favorites">[];
+}) => {
   const typeIcons = {
     image: <ImageIcon />,
     pdf: <FileText />,
     csv: <Table />,
   } as Record<Doc<"files">["type"], ReactNode>;
+
+  const isFavorite = allFavorites.some(
+    (favorite) => favorite.fileId === file._id
+  );
+
+  const isMarkedForDeletion = file.shouldDelete ? true : false;
 
   return (
     <Card>
@@ -134,7 +196,11 @@ const FileCard = ({ file }: { file: Doc<"files"> }) => {
           {file.name}
         </CardTitle>
         <div className="absolute top-2 right-2">
-          <FileCardActions file={file} />
+          <FileCardActions
+            file={file}
+            isFavorite={isFavorite}
+            isMarkedForDeletion={isMarkedForDeletion}
+          />
         </div>
         {/* <CardDescription>Card Description</CardDescription> */}
       </CardHeader>
