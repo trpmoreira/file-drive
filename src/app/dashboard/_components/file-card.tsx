@@ -24,9 +24,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { format, formatDistance, formatRelative, subDays } from "date-fns";
+
 import { Doc, Id } from "../../../../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
 import {
+  Download,
   FileText,
   ImageIcon,
   MoreHorizontal,
@@ -37,11 +39,12 @@ import {
   Undo,
 } from "lucide-react";
 import { ReactNode, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { toast } from "@/components/ui/use-toast";
 import Image from "next/image";
 import { Protect } from "@clerk/nextjs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 function FileCardActions({
   file,
@@ -104,6 +107,17 @@ function FileCardActions({
           <MoreVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
+          <DropdownMenuItem
+            className="flex gap-2 items-center cursor-pointer"
+            onClick={() => {
+              window.open(getFileUrl(file.fileId), "_blank");
+            }}
+          >
+            <div className="flex gap-1 items-center">
+              <Download className="w-4 h-4 " />
+              <span>Download</span>
+            </div>
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="flex gap-2 items-center cursor-pointer"
             onClick={() => {
@@ -188,6 +202,10 @@ const FileCard = ({
 
   const isMarkedForDeletion = file.shouldDelete ? true : false;
 
+  const userProfile = useQuery(api.users.getUserProfile, {
+    userId: file.userId,
+  });
+
   return (
     <Card>
       <CardHeader className="relative">
@@ -217,14 +235,17 @@ const FileCard = ({
         {file.type == "pdf" && <FileText className="w-20 h-20" />}
         {file.type == "csv" && <Table className="w-20 h-20" />}
       </CardContent>
-      <CardFooter className="flex justify-center">
-        <Button
-          onClick={() => {
-            window.open(getFileUrl(file.fileId), "_blank");
-          }}
-        >
-          Download
-        </Button>
+      <CardFooter className="flex justify-between">
+        <div className="flex gap-2 text-xs text-gray-700 w-40">
+          <Avatar className="w-6 h-6">
+            <AvatarImage src={userProfile?.image} />
+            <AvatarFallback>{userProfile?.name}</AvatarFallback>
+          </Avatar>
+          {userProfile?.name}
+        </div>
+        <div className="text-xs text-gray-700 ">
+          Uploaded on {formatRelative(new Date(file._creationTime), new Date())}
+        </div>
       </CardFooter>
     </Card>
   );
