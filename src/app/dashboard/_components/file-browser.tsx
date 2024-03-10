@@ -9,14 +9,16 @@ import { api } from "../../../../convex/_generated/api";
 import { UploadButton } from "@/app/dashboard/_components/upload-button";
 import SearchBar from "@/app/dashboard/_components/search-bar";
 import FileCard from "@/app/dashboard/_components/file-card";
+import { columns } from "./columns";
+import { DataTable } from "./file-table";
 
 export function FileBrowser({
   title,
-  favorites,
+  favoritesOnly,
   deletedOnly,
 }: {
   title: string;
-  favorites?: boolean;
+  favoritesOnly?: boolean;
   deletedOnly?: boolean;
 }) {
   const organization = useOrganization();
@@ -36,9 +38,17 @@ export function FileBrowser({
 
   const files = useQuery(
     api.files.getFiles,
-    orgId ? { orgId, query, favorites, deletedOnly } : "skip"
+    orgId ? { orgId, query, favorites: favoritesOnly, deletedOnly } : "skip"
   );
   const isLoading = files === undefined;
+
+  const modifiedFiles =
+    files?.map((file) => ({
+      ...file,
+      isFavorited: (allFavorites ?? []).some(
+        (favorite) => favorite.fileId === file._id
+      ),
+    })) ?? [];
 
   return (
     <div>
@@ -66,21 +76,23 @@ export function FileBrowser({
 
       {!isLoading && files.length === 0 && query && (
         <div>
-          <div className="flex justify-between mb-8">
-            <h1 className="text-4xl font-bold">Your {title}</h1>
-            <SearchBar query={query} setQuery={setQuery} />
-            <UploadButton />
-          </div>
-          <div className="flex flex-col gap-8 items-center mt-20">
-            <Image
-              alt="Image a women putting a giant picture in a giant monitor, like she is uploading a picture to the monitor"
-              width={500}
-              height={500}
-              src="/empty.svg"
-            />
-            <h3 className="text-2xl  text-center">
-              We didnt find any files with the name ## {query} ##
-            </h3>
+          <div>
+            <div className="flex justify-between mb-8">
+              <h1 className="text-4xl font-bold">Your {title}</h1>
+              <SearchBar query={query} setQuery={setQuery} />
+              <UploadButton />
+            </div>
+            <div className="flex flex-col gap-8 items-center mt-20">
+              <Image
+                alt="Image a women putting a giant picture in a giant monitor, like she is uploading a picture to the monitor"
+                width={500}
+                height={500}
+                src="/empty.svg"
+              />
+              <h3 className="text-2xl  text-center">
+                We didnt find any files with the name ## {query} ##
+              </h3>
+            </div>
           </div>
         </div>
       )}
@@ -93,15 +105,10 @@ export function FileBrowser({
             <UploadButton />
           </div>
 
+          <DataTable columns={columns} data={modifiedFiles} />
           <div className="grid grid-cols-4 gap-4">
-            {files?.map((file) => {
-              return (
-                <FileCard
-                  allFavorites={allFavorites ? allFavorites : []}
-                  key={file._id}
-                  file={file}
-                />
-              );
+            {modifiedFiles?.map((file) => {
+              return <FileCard key={file._id} file={file} />;
             })}
           </div>
         </div>
