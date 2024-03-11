@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Doc, Id } from "../../../../convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
   AlertDialog,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Download, MoreVertical, StarIcon, Trash2, Undo } from "lucide-react";
 import { Protect } from "@clerk/nextjs";
+import { getMe } from "../../../../convex/users";
 
 export function FileAactions({
   file,
@@ -34,6 +35,7 @@ export function FileAactions({
   const deleteFile = useMutation(api.files.deleteFile);
   const toggleFavorite = useMutation(api.files.toggleFavorite);
   const recover = useMutation(api.files.restoreFile);
+  const me = useQuery(api.users.getMe);
 
   return (
     <>
@@ -111,7 +113,15 @@ export function FileAactions({
               </div>
             )}
           </DropdownMenuItem>
-          <Protect role="org:admin">
+          <Protect
+            condition={(check) => {
+              return (
+                check({
+                  role: "org:admin",
+                }) || file.userId === me?._id
+              );
+            }}
+          >
             <DropdownMenuSeparator />
             {!file.shouldDelete ? (
               <DropdownMenuItem
