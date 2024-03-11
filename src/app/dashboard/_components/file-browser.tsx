@@ -11,6 +11,32 @@ import SearchBar from "@/app/dashboard/_components/search-bar";
 import FileCard from "@/app/dashboard/_components/file-card";
 import { columns } from "./columns";
 import { DataTable } from "./file-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Doc } from "../../../../convex/_generated/dataModel";
+
+function Placeholder() {
+  return (
+    <div className="flex flex-col gap-8 w-full items-center mt-24">
+      <Image
+        alt="an image of a picture and directory icon"
+        width="300"
+        height="300"
+        src="/empty.svg"
+      />
+      <div className="text-2xl">You have no files, upload one now</div>
+      <UploadButton />
+    </div>
+  );
+}
 
 export function FileBrowser({
   title,
@@ -24,6 +50,7 @@ export function FileBrowser({
   const organization = useOrganization();
   const user = useUser();
   const [query, setQuery] = useState("");
+  const [type, setType] = useState<Doc<"files">["type"] | "all">("all");
 
   let orgId: string | undefined = undefined;
 
@@ -38,7 +65,15 @@ export function FileBrowser({
 
   const files = useQuery(
     api.files.getFiles,
-    orgId ? { orgId, query, favorites: favoritesOnly, deletedOnly } : "skip"
+    orgId
+      ? {
+          orgId,
+          query,
+          type: type === "all" ? undefined : type,
+          favorites: favoritesOnly,
+          deletedOnly,
+        }
+      : "skip"
   );
   const isLoading = files === undefined;
 
@@ -52,67 +87,66 @@ export function FileBrowser({
 
   return (
     <div>
-      {isLoading && (
-        <div className="flex flex-col items-center mt-24 w-full">
-          <Loader2 className="h-32 w-32 animate-spin text-zinc-500" />
-          <span className="text-2xl text-zinc-500">Loading your images...</span>
-        </div>
-      )}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">{title}</h1>
 
-      {!isLoading && !query && files.length === 0 && (
-        <div className="flex flex-col gap-8 items-center mt-20">
-          <Image
-            alt="Image a women putting a giant picture in a giant monitor, like she is uploading a picture to the monitor"
-            width={500}
-            height={500}
-            src="/empty.svg"
-          />
-          <h3 className="text-2xl  text-center">
-            You have no files yet, upload one now!
-          </h3>
-          <UploadButton />
-        </div>
-      )}
+        <SearchBar query={query} setQuery={setQuery} />
 
-      {!isLoading && files.length === 0 && query && (
-        <div>
-          <div>
-            <div className="flex justify-between mb-8">
-              <h1 className="text-4xl font-bold">Your {title}</h1>
-              <SearchBar query={query} setQuery={setQuery} />
-              <UploadButton />
-            </div>
-            <div className="flex flex-col gap-8 items-center mt-20">
-              <Image
-                alt="Image a women putting a giant picture in a giant monitor, like she is uploading a picture to the monitor"
-                width={500}
-                height={500}
-                src="/empty.svg"
-              />
-              <h3 className="text-2xl  text-center">
-                We didnt find any files with the name ## {query} ##
-              </h3>
-            </div>
+        <UploadButton />
+      </div>
+
+      <Tabs defaultValue="table">
+        <div className="flex justify-between items-center">
+          <TabsList className="mb-2">
+            <TabsTrigger value="grid" className="flex gap-2 items-center">
+              Cards
+            </TabsTrigger>
+            <TabsTrigger value="table" className="flex gap-2 items-center">
+              Table
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex gap-2 items-center">
+            <Label htmlFor="type-select">Type Filter</Label>
+            <Select
+              value={type}
+              onValueChange={(newType) => {
+                setType(newType as any);
+              }}
+            >
+              <SelectTrigger id="type-select" className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="image">Image</SelectItem>
+                <SelectItem value="csv">CSV</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      )}
 
-      {!isLoading && files.length > 0 && (
-        <div>
-          <div className="flex justify-between mb-8">
-            <h1 className="text-4xl font-bold">Your {title}</h1>
-            <SearchBar query={query} setQuery={setQuery} />
-            <UploadButton />
+        {isLoading && (
+          <div className="flex flex-col gap-8 w-full items-center mt-24">
+            <Loader2 className="h-32 w-32 animate-spin text-gray-500" />
+            <div className="text-2xl">Loading your files...</div>
           </div>
+        )}
 
-          <DataTable columns={columns} data={modifiedFiles} />
-          <div className="grid grid-cols-4 gap-4">
+        <TabsContent value="grid">
+          <div className="grid grid-cols-3 gap-4">
             {modifiedFiles?.map((file) => {
               return <FileCard key={file._id} file={file} />;
             })}
           </div>
-        </div>
-      )}
+        </TabsContent>
+        <TabsContent value="table">
+          <DataTable columns={columns} data={modifiedFiles} />
+        </TabsContent>
+      </Tabs>
+
+      {files?.length === 0 && <Placeholder />}
     </div>
   );
 }
